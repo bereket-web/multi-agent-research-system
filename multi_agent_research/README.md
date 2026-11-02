@@ -1,0 +1,1 @@
+The package is documented in the repository [README](../README.md). Public interfaces and dataclasses are in `models.py`; role implementations are in `agents.py`; deterministic stage routing is in `orchestrator.py`; optional live adapters are in `web.py`.

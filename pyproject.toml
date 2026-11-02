@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "multi-agent-research-system"
+version = "0.1.0"
+description = "A bounded, evidence-led multi-agent research workflow with independent claim checks and review gates"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "AI/ML Portfolio Project" }]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10", "ruff>=0.11,<1"]
+
+[project.scripts]
+research-team = "multi_agent_research.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["multi_agent_research*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

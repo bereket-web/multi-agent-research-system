@@ -1,0 +1,93 @@
+{
+  "evaluation_type": "small, original synthetic mechanism check; not a real-world benchmark",
+  "case_count": 6,
+  "direct_publish_baseline": {
+    "published_claims": 6,
+    "known_unsupported_or_disputed_claims_included": 4,
+    "known_problem_inclusion_rate": 0.6666666666666666
+  },
+  "multi_agent_screening_gate": {
+    "published_claims": 2,
+    "known_unsupported_or_disputed_claims_included": 0,
+    "known_problem_inclusion_rate": 0.0,
+    "correct_status_cases": 6
+  },
+  "scope_note": "The test isolates claim screening on supplied excerpts. It does not assess search recall, truth, entailment, source quality, or source independence.",
+  "cases": [
+    {
+      "case": "supported single source",
+      "expected_gate_status": "single_source",
+      "actual_gate_status": "single_source",
+      "gate_matches_expected": true,
+      "direct_publish_includes": true,
+      "multi_agent_gate_includes": true,
+      "supporting_source_ids": [
+        "S1"
+      ],
+      "potential_conflict_source_ids": []
+    },
+    {
+      "case": "same statement at multiple URLs",
+      "expected_gate_status": "multi_source_match",
+      "actual_gate_status": "multi_source_match",
+      "gate_matches_expected": true,
+      "direct_publish_includes": true,
+      "multi_agent_gate_includes": true,
+      "supporting_source_ids": [
+        "S1",
+        "S2"
+      ],
+      "potential_conflict_source_ids": []
+    },
+    {
+      "case": "invented quantity",
+      "expected_gate_status": "unverified",
+      "actual_gate_status": "unverified",
+      "gate_matches_expected": true,
+      "direct_publish_includes": true,
+      "multi_agent_gate_includes": false,
+      "supporting_source_ids": [],
+      "potential_conflict_source_ids": []
+    },
+    {
+      "case": "conflicting year",
+      "expected_gate_status": "disputed",
+      "actual_gate_status": "disputed",
+      "gate_matches_expected": true,
+      "direct_publish_includes": true,
+      "multi_agent_gate_includes": false,
+      "supporting_source_ids": [
+        "S1",
+        "S2"
+      ],
+      "potential_conflict_source_ids": [
+        "S2"
+      ]
+    },
+    {
+      "case": "negation conflict",
+      "expected_gate_status": "disputed",
+      "actual_gate_status": "disputed",
+      "gate_matches_expected": true,
+      "direct_publish_includes": true,
+      "multi_agent_gate_includes": false,
+      "supporting_source_ids": [
+        "S1",
+        "S2"
+      ],
+      "potential_conflict_source_ids": [
+        "S2"
+      ]
+    },
+    {
+      "case": "unrelated unsupported claim",
+      "expected_gate_status": "unverified",
+      "actual_gate_status": "unverified",
+      "gate_matches_expected": true,
+      "direct_publish_includes": true,
+      "multi_agent_gate_includes": false,
+      "supporting_source_ids": [],
+      "potential_conflict_source_ids": []
+    }
+  ]
+}

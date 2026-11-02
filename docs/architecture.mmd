@@ -1,0 +1,18 @@
+flowchart TD
+    Q[Research question] --> O[Orchestrator: scope and budget]
+    O --> R1[Coverage researcher]
+    O --> R2[Primary-source researcher]
+    O --> R3[Counterevidence researcher]
+    R1 --> D[Deduplicate URLs and enforce fetch budget]
+    R2 --> D
+    R3 --> D
+    D --> F[Bounded public-page fetch]
+    F --> E[Evidence ledger: app-assigned IDs + excerpts]
+    E --> A[Analyst: exact-sentence candidate claims]
+    A --> C[Fact checker: support + numeric/polarity conflict heuristics]
+    E --> C
+    C --> W[Writer: only screened claims]
+    W --> V[Independent reviewer: citation + gate audit]
+    V -->|pass| P[Markdown / JSON report]
+    V -->|fail| X[Fail closed: withhold findings]
+    U[Retrieved page text is untrusted data] -. never instructions .-> F
