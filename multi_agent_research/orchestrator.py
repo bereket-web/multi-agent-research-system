@@ -85,7 +85,7 @@ class ResearchOrchestrator:
                 "screen_claims",
                 len(candidates),
                 len(assessments),
-                "Checked exact/overlap support and heuristic conflicts across retrieved excerpts.",
+                "Checked exact citation provenance and heuristic conflicts across retrieved excerpts.",
             )
         )
 

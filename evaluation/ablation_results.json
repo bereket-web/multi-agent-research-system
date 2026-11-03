@@ -57,8 +57,7 @@
       "direct_publish_includes": true,
       "multi_agent_gate_includes": false,
       "supporting_source_ids": [
-        "S1",
-        "S2"
+        "S1"
       ],
       "potential_conflict_source_ids": [
         "S2"
@@ -72,8 +71,7 @@
       "direct_publish_includes": true,
       "multi_agent_gate_includes": false,
       "supporting_source_ids": [
-        "S1",
-        "S2"
+        "S1"
       ],
       "potential_conflict_source_ids": [
         "S2"

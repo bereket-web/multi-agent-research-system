@@ -35,8 +35,9 @@ def to_markdown(report: ResearchReport) -> str:
             "",
             "## What the checks mean",
             "",
-            "The fact checker uses exact text and conservative token-overlap, numeric, and polarity heuristics. "
-            "The reviewer checks citation provenance and gate status. Neither agent establishes truth, source authority, "
+            "Only exact normalized text in an excerpt is eligible as citation support; token-overlap, numeric, and "
+            "polarity heuristics flag possible conflicts but do not prove support. The reviewer checks citation "
+            "provenance and gate status. Neither agent establishes truth, source authority, "
             "or logical entailment; read the linked sources before relying on a conclusion.",
             "",
             f"**Review:** {'passed' if report.review.passed else 'failed'}; "

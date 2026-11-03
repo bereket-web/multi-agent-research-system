@@ -247,8 +247,9 @@ class FactCheckerAgent:
             for item in evidence:
                 normalized_excerpt = _normalized(item.excerpt)
                 exact = bool(normalized_claim and normalized_claim in normalized_excerpt)
-                overlap = _claim_overlap(candidate.text, item.excerpt)
-                if exact or overlap >= 0.78:
+                # Heuristic overlap is not citation provenance: only exact normalized
+                # text can be attributed to a source in the final report.
+                if exact:
                     supported.add(item.source_id)
                 for sentence in _sentences(item.excerpt):
                     if _normalized(sentence) == normalized_claim:
@@ -340,8 +341,18 @@ class ReviewerAgent:
             if not finding.source_ids:
                 errors.append(f"Finding {finding.claim_id} has no citations")
             assessment = assessment_by_id.get(finding.claim_id)
-            if not assessment or assessment.status not in WriterAgent.ALLOWED_STATUSES:
-                errors.append(f"Finding {finding.claim_id} did not pass the fact-check gate")
+            if not assessment:
+                errors.append(f"Finding {finding.claim_id} has no matching fact-check assessment")
+            else:
+                if assessment.status not in WriterAgent.ALLOWED_STATUSES:
+                    errors.append(f"Finding {finding.claim_id} did not pass the fact-check gate")
+                if finding.text != assessment.text:
+                    errors.append(f"Finding {finding.claim_id} text differs from its assessed claim")
+                if finding.status != assessment.status:
+                    errors.append(f"Finding {finding.claim_id} status differs from its assessment")
+                unsupported_ids = set(finding.source_ids) - set(assessment.supported_by)
+                for source_id in sorted(unsupported_ids):
+                    errors.append(f"Finding {finding.claim_id} cites {source_id}, not approved by its assessment")
             for source_id in finding.source_ids:
                 item = evidence_by_id.get(source_id)
                 if not item:

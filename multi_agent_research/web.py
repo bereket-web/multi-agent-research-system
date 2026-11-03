@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import ipaddress
+import math
 import socket
+from collections.abc import Callable
 from datetime import datetime, timezone
 from html.parser import HTMLParser
+from queue import Queue
+from threading import BoundedSemaphore, Thread
+from time import monotonic
+from typing import TypeVar, cast
 from urllib.parse import parse_qs, quote_plus, urljoin, urlparse, urlunparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
@@ -14,6 +20,50 @@ from .models import Page, SearchHit
 USER_AGENT = "MultiAgentResearchPortfolio/0.1 (bounded public-page research)"
 MAX_PAGE_BYTES = 1_000_000
 TIMEOUT_SECONDS = 12
+MAX_NETWORK_WORKERS = 9
+_network_worker_slots = BoundedSemaphore(MAX_NETWORK_WORKERS)
+_T = TypeVar("_T")
+
+
+def _run_with_total_deadline(operation: Callable[[], _T], seconds: float) -> _T:
+    """Bound caller wait even when a synchronous socket call drips data indefinitely.
+
+    Python's urllib timeout is an idle/socket-operation timeout, not a total deadline.
+    A timed-out daemon worker may continue until its socket operation completes, but
+    the shared slot cap prevents abandoned calls from creating unbounded threads.
+    """
+    if not math.isfinite(seconds) or seconds <= 0:
+        raise ValueError("Total network deadline must be positive")
+    deadline = monotonic() + seconds
+    if not _network_worker_slots.acquire(blocking=False):
+        raise TimeoutError("Network worker capacity is exhausted")
+
+    result: Queue[tuple[bool, _T | BaseException]] = Queue(maxsize=1)
+
+    def invoke() -> None:
+        try:
+            result.put((True, operation()))
+        except BaseException as exc:
+            result.put((False, exc))
+        finally:
+            _network_worker_slots.release()
+
+    worker = Thread(target=invoke, name="research-network-request", daemon=True)
+    try:
+        worker.start()
+    except BaseException:
+        _network_worker_slots.release()
+        raise
+    worker.join(max(0.0, deadline - monotonic()))
+    if worker.is_alive():
+        raise TimeoutError(f"Network request exceeded {seconds:g}-second total deadline")
+
+    succeeded, value = result.get_nowait()
+    if succeeded:
+        return cast(_T, value)
+    if isinstance(value, BaseException):
+        raise value
+    raise RuntimeError("Network worker failed without an exception")
 
 
 def validate_public_url(url: str, resolve: bool = True) -> str:
@@ -89,11 +139,19 @@ class DuckDuckGoSearch:
 
     endpoint = "https://lite.duckduckgo.com/lite/"
 
+    def __init__(self, total_timeout: float = TIMEOUT_SECONDS) -> None:
+        if not math.isfinite(total_timeout) or total_timeout <= 0:
+            raise ValueError("Total network deadline must be positive and finite")
+        self.total_timeout = total_timeout
+
     def search(self, query: str, max_results: int = 5) -> list[SearchHit]:
+        return _run_with_total_deadline(lambda: self._search(query, max_results), self.total_timeout)
+
+    def _search(self, query: str, max_results: int) -> list[SearchHit]:
         request = Request(
             self.endpoint + "?q=" + quote_plus(query[:220]), headers={"User-Agent": USER_AGENT, "Accept": "text/html"}
         )
-        with build_opener().open(request, timeout=TIMEOUT_SECONDS) as response:
+        with build_opener().open(request, timeout=self.total_timeout) as response:
             status = getattr(response, "status", 200)
             html = response.read(700_000).decode("utf-8", errors="replace")
         if status != 200 or _is_search_challenge(html):
@@ -171,13 +229,21 @@ class _TextParser(HTMLParser):
 
 
 class SafePageFetcher:
-    """Fetches static public HTML only; limits redirects, timeout, and response bytes."""
+    """Fetch static public HTML with redirect, total-time, and response-size limits."""
+
+    def __init__(self, total_timeout: float = TIMEOUT_SECONDS) -> None:
+        if not math.isfinite(total_timeout) or total_timeout <= 0:
+            raise ValueError("Total network deadline must be positive and finite")
+        self.total_timeout = total_timeout
 
     def fetch(self, url: str) -> Page:
+        return _run_with_total_deadline(lambda: self._fetch(url), self.total_timeout)
+
+    def _fetch(self, url: str) -> Page:
         safe_url = validate_public_url(url, resolve=True)
         opener = build_opener(_SafeRedirectHandler())
         request = Request(safe_url, headers={"User-Agent": USER_AGENT, "Accept": "text/html,application/xhtml+xml"})
-        with opener.open(request, timeout=TIMEOUT_SECONDS) as response:
+        with opener.open(request, timeout=self.total_timeout) as response:
             content_type = response.headers.get("Content-Type", "").lower()
             if "html" not in content_type:
                 raise ValueError(f"Unsupported content type: {content_type or 'unknown'}")

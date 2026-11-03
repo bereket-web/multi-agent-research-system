@@ -21,7 +21,7 @@ All role components are deterministic. This is an intentional first implementati
 
 ## Evidence and conflict policy
 
-Source IDs are assigned by the application after successful fetch. Analyst claims are exact extracted sentences. The fact checker looks for exact/near-text matches and possible contradictions from changed numbers, negation, or selected opposing terms. Status `multi_source_match` records matching text across URLs only; URLs may be syndicated or share a source. Disputed and unverified claims are excluded from the report. The reviewer checks that each included sentence is present in its cited excerpt and was permitted by the writer policy. These checks validate process/provenance, not whether the source is right or supports the claim logically.
+Source IDs are assigned by the application after successful fetch. Analyst claims are exact extracted sentences. Only exact normalized candidate text in an excerpt is eligible as citation support; token overlap, changed numbers, negation, and selected opposing terms can flag possible conflicts but do not create supporting citations. Status `multi_source_match` records the same exact normalized text at multiple URLs only; URLs may be syndicated or share a source. Disputed and unverified claims are excluded from the report. The reviewer checks that each included sentence is present in its cited excerpt and was permitted by the writer policy. These checks validate process/provenance, not whether the source is right or supports the claim logically.
 
 ## Why conservative text checks
 
@@ -29,7 +29,7 @@ An entailment model would add another model, token/model provenance, evaluation 
 
 ## Safety boundary
 
-Search workers only search. Fetching validates HTTP(S) URLs, rejects local/private destinations, rechecks redirects, and caps bytes/time. Page text is data: the software does not execute it, send it to an LLM, or let it invoke tools. Search-page parsing is best-effort. DNS validation is not a complete defense against rebinding; production deployment would need network egress policy.
+Search workers only search. Fetching validates HTTP(S) URLs, rejects local/private destinations, rechecks redirects, and caps bytes and caller wait with a 12-second total deadline. A synchronous socket operation that outlives the deadline may remain in a daemon worker; the global worker cap is nine. Page text is data: the software does not execute it, send it to an LLM, or let it invoke tools. DNS validation is not a complete defense against rebinding; production deployment would need network egress policy.
 
 ## Evaluation boundary
 
